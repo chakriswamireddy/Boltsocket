@@ -1,0 +1,39 @@
+{
+  "name": "@bolt-socket/core",
+  "version": "0.1.0",
+  "description": "Core event registry and type system for bolt-socket",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "echo \"Tests coming soon\""
+  },
+  "keywords": [
+    "websocket",
+    "events",
+    "typescript",
+    "type-safe"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "zod": "^3.22.0"
+  }
+}

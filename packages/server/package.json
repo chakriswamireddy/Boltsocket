@@ -1,0 +1,44 @@
+{
+  "name": "@bolt-socket/server",
+  "version": "0.1.0",
+  "description": "Socket.IO server abstraction for bolt-socket",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "echo \"Tests coming soon\""
+  },
+  "keywords": [
+    "websocket",
+    "socket.io",
+    "server",
+    "typescript",
+    "type-safe"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "@bolt-socket/core": "workspace:*",
+    "socket.io": "^4.6.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@bolt-socket/core": "workspace:*",
+    "socket.io": "^4.6.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "zod": "^3.22.0"
+  }
+}

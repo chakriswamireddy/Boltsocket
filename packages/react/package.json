@@ -1,0 +1,45 @@
+{
+  "name": "@bolt-socket/react",
+  "version": "0.1.0",
+  "description": "React hooks and components for bolt-socket",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "echo \"Tests coming soon\""
+  },
+  "keywords": [
+    "websocket",
+    "react",
+    "hooks",
+    "typescript",
+    "type-safe"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "@bolt-socket/core": "workspace:*",
+    "react": "^18.0.0",
+    "socket.io-client": "^4.6.0"
+  },
+  "devDependencies": {
+    "@bolt-socket/core": "workspace:*",
+    "@types/react": "^18.2.0",
+    "react": "^18.2.0",
+    "socket.io-client": "^4.6.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3"
+  }
+}

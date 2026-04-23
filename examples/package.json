@@ -1,0 +1,24 @@
+{
+  "name": "bolt-socket-examples",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Examples for bolt-socket event registry",
+  "type": "module",
+  "scripts": {
+    "example:basic": "tsx basic-usage.ts",
+    "example:server": "tsx server-usage.ts",
+    "example:rooms": "tsx rooms-usage.ts",
+    "example:auth": "tsx auth-usage.ts",
+    "example:edge-cases": "tsx edge-cases.ts",
+    "example:types": "tsx type-inference.ts",
+    "example:all": "npm run example:basic && npm run example:server && npm run example:rooms && npm run example:auth && npm run example:edge-cases && npm run example:types"
+  },
+  "devDependencies": {
+    "@bolt-socket/core": "workspace:*",
+    "@bolt-socket/server": "workspace:*",
+    "socket.io": "^4.6.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "zod": "^3.22.0"
+  }
+}
