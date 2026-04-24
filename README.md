@@ -1,9 +1,3 @@
-# bolt-socket
-
-Full-stack, type-safe WebSocket abstraction for real-time applications built on Socket.IO and Zod.
-
-Here’s a clean, structured README you can drop into your repo:
-
 ---
 
 # ⚡ BoltSocket
