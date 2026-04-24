@@ -1,5 +1,5 @@
 {
-  "name": "@bolt-socket/react",
+  "name": "@chakri-ch/react",
   "version": "1.0.0",
   "description": "React hooks and provider for type-safe real-time WebSocket events with auto-reconnect and observability",
   "license": "MIT",
@@ -60,12 +60,12 @@
     "bolt-socket"
   ],
   "peerDependencies": {
-    "@bolt-socket/core": ">=1.0.0",
+    "@chakri-ch/core": ">=1.0.0",
     "react": ">=18.0.0",
     "socket.io-client": ">=4.6.0"
   },
   "devDependencies": {
-    "@bolt-socket/core": "workspace:*",
+    "@chakri-ch/core": "workspace:*",
     "@types/react": "^18.2.0",
     "react": "^18.2.0",
     "socket.io-client": "^4.6.0",

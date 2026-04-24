@@ -1,5 +1,5 @@
 {
-  "name": "@bolt-socket/core",
+  "name": "@chakri-ch/core",
   "version": "1.0.0",
   "description": "Type-safe event registry with Zod validation for real-time WebSocket apps",
   "license": "MIT",
