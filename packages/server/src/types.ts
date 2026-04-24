@@ -4,7 +4,10 @@ import type {
   EventNames,
   EventPayload,
   EventRegistry,
+  ReliabilityOptions,
+  EventReplayEntry,
 } from '@bolt-socket/core';
+import type { EventReplayBuffer } from './reliability';
 
 /**
  * User context attached to authenticated socket
@@ -126,7 +129,7 @@ export interface SocketServerOptions<T extends EventSchema> {
    * Optional authentication middleware
    * Validates connections and attaches user context to socket
    * If provided, unauthenticated connections will be rejected
-   * 
+   *
    * @example
    * ```ts
    * auth: async (socket) => {
@@ -134,7 +137,7 @@ export interface SocketServerOptions<T extends EventSchema> {
    *   if (!token) {
    *     return { success: false, error: 'No token provided' };
    *   }
-   *   
+   *
    *   const user = await validateToken(token);
    *   return {
    *     success: true,
@@ -144,6 +147,22 @@ export interface SocketServerOptions<T extends EventSchema> {
    * ```
    */
   auth?: AuthMiddleware;
+
+  /**
+   * Reliability options for reconnection handling and event replay.
+   *
+   * @example With event replay enabled
+   * ```ts
+   * reliability: {
+   *   replay: {
+   *     enabled: true,
+   *     bufferSize: 500,
+   *     ttlMs: 10 * 60 * 1000 // 10 minutes
+   *   }
+   * }
+   * ```
+   */
+  reliability?: ReliabilityOptions;
 }
 
 /**
@@ -350,10 +369,10 @@ export interface SocketServer<T extends EventSchema> {
   /**
    * Get all connected authenticated sockets
    * Useful for broadcasting or finding specific users
-   * 
+   *
    * @returns Array of authenticated sockets
    * @throws {Error} If Socket.IO server not attached
-   * 
+   *
    * @example
    * ```ts
    * const sockets = server.getAllAuthSockets();
@@ -362,6 +381,61 @@ export interface SocketServer<T extends EventSchema> {
    * ```
    */
   getAllAuthSockets(): AuthenticatedSocket[];
+
+  // ─── Phase 7: Reliability ────────────────────────────────────────────────
+
+  /**
+   * Register a callback that fires whenever a client reconnects and requests sync.
+   * Useful for re-joining rooms or sending fresh state to the client.
+   *
+   * @param handler - Called with the socket that reconnected and missed entries
+   * @returns Unsubscribe function
+   *
+   * @example
+   * ```ts
+   * const off = server.onClientReconnect((socket, missed) => {
+   *   console.log(`Socket ${socket.id} missed ${missed.length} events`);
+   *   // Re-join user rooms, push fresh state, etc.
+   *   server.joinRoom(socket.id, `user:${socket.auth?.userId}`);
+   * });
+   *
+   * // Later: stop listening
+   * off();
+   * ```
+   */
+  onClientReconnect(
+    handler: (socket: Socket, missedEvents: EventReplayEntry[]) => void
+  ): () => void;
+
+  /**
+   * Replay all buffered events that occurred after `since` to a specific socket.
+   * Call this inside `onClientReconnect` or a `bolt:sync` handler to catch up a client.
+   *
+   * @param socketId - Target socket to receive replayed events
+   * @param since    - Unix timestamp (ms) — replay events after this point
+   * @param rooms    - Optional room filter (only events for these rooms + global)
+   *
+   * @example
+   * ```ts
+   * server.onClientReconnect((socket, missed) => {
+   *   const lastSeen = getLastSeenTimestamp(socket.auth.userId);
+   *   server.replayEventsTo(socket.id, lastSeen);
+   * });
+   * ```
+   */
+  replayEventsTo(socketId: string, since: number, rooms?: string[]): void;
+
+  /**
+   * Access the underlying event replay buffer (if replay is enabled).
+   * Returns undefined when reliability.replay.enabled is false.
+   *
+   * @example
+   * ```ts
+   * const buffer = server.getReplayBuffer();
+   * console.log('Buffered events:', buffer?.size());
+   * ```
+   */
+  getReplayBuffer(): EventReplayBuffer | undefined;
 }
 
 /**

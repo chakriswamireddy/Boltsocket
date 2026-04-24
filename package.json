@@ -1,28 +1,39 @@
 {
   "name": "bolt-socket",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Full-stack WebSocket abstraction with type-safe events",
+  "description": "Full-stack type-safe WebSocket abstraction for real-time apps",
+  "license": "MIT",
+  "packageManager": "pnpm@10.0.0",
   "workspaces": [
     "packages/*",
     "examples"
   ],
   "scripts": {
-    "build": "bun run build:core && bun run build:server && bun run build:react",
-    "build:core": "cd packages/core && bun run build",
-    "build:server": "cd packages/server && bun run build",
-    "build:react": "cd packages/react && bun run build",
-    "dev:core": "cd packages/core && bun run dev",
-    "dev:server": "cd packages/server && bun run dev",
-    "dev:react": "cd packages/react && bun run dev",
-    "example:basic": "cd examples && bun run example:basic",
-    "example:server": "cd examples && bun run example:server",
-    "example:all": "cd examples && bun run example:all"
+    "build": "pnpm run build:core && pnpm run build:server && pnpm run build:react",
+    "build:core": "pnpm --filter @bolt-socket/core run build",
+    "build:server": "pnpm --filter @bolt-socket/server run build",
+    "build:react": "pnpm --filter @bolt-socket/react run build",
+    "dev:core": "pnpm --filter @bolt-socket/core run dev",
+    "dev:server": "pnpm --filter @bolt-socket/server run dev",
+    "dev:react": "pnpm --filter @bolt-socket/react run dev",
+    "typecheck": "pnpm -r run typecheck",
+    "clean": "pnpm -r exec rm -rf dist",
+    "publish:core": "pnpm --filter @bolt-socket/core publish",
+    "publish:server": "pnpm --filter @bolt-socket/server publish",
+    "publish:react": "pnpm --filter @bolt-socket/react publish",
+    "publish:all": "pnpm run build && pnpm run publish:core && pnpm run publish:server && pnpm run publish:react",
+    "publish:dry": "pnpm run build && pnpm -r exec -- npm pack --dry-run"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chakriswamireddy/Boltsocket.git"
   }
 }

@@ -1,39 +1,37 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { logger, tracer } from '@bolt-socket/core';
 import type { EventSchema, EventNames } from '@bolt-socket/core';
 import type { EventHandler } from './types';
 import { useSocketContext } from './SocketProvider';
 
 /**
- * useSocketEvent - Subscribe to a socket event with automatic cleanup
- * 
- * This hook handles the complex lifecycle of socket event listeners:
- * - Subscribes to event when component mounts
- * - Cleans up listener when component unmounts
- * - Reattaches listener after reconnection
- * - Prevents stale closures by keeping handler fresh
- * - Avoids duplicate listeners
- * - Supports dependency array for handler updates
- * 
- * @param eventName - Type-safe event name from registry
- * @param handler - Callback function with typed payload
- * @param deps - Optional dependency array (like useEffect)
- * 
- * @example
+ * useSocketEvent — Subscribe to a typed socket event with automatic cleanup.
+ *
+ * Handles the full lifecycle of a socket event listener:
+ * - Subscribes on mount, unsubscribes on unmount         (no memory leaks)
+ * - Validates every incoming payload against the schema  (runtime safety)
+ * - Prevents stale closures via a ref-based handler      (always fresh)
+ * - Avoids duplicate listeners                           (stable wrapper)
+ * - Dev mode: logs subscriptions + validation failures   (Phase 8)
+ * - Dev mode: records inbound traces via tracer          (Phase 8)
+ *
+ * @param eventName - Type-safe event name from the registry
+ * @param handler   - Callback function with fully typed payload
+ * @param deps      - Optional dependency array (like useEffect)
+ *
+ * @example Basic
  * ```tsx
  * useSocketEvent('order.updated', (data) => {
- *   console.log('Order', data.orderId, 'is now', data.status);
+ *   // data is fully typed: { orderId: string; status: string }
+ *   setOrder(data);
  * });
  * ```
- * 
- * @example With dependencies
+ *
+ * @example With dependency
  * ```tsx
- * const [orderId, setOrderId] = useState('123');
- * 
  * useSocketEvent('order.updated', (data) => {
- *   if (data.orderId === orderId) {
- *     console.log('My order updated!');
- *   }
- * }, [orderId]); // Resubscribe when orderId changes
+ *   if (data.orderId === currentOrderId) updateUI(data);
+ * }, [currentOrderId]);
  * ```
  */
 export function useSocketEvent<T extends EventSchema, E extends EventNames<T>>(
@@ -42,89 +40,101 @@ export function useSocketEvent<T extends EventSchema, E extends EventNames<T>>(
   deps: React.DependencyList = []
 ): void {
   const { socket, events } = useSocketContext<T>();
-  
-  // Store the latest handler in a ref to avoid stale closures
-  // This ensures the handler always has access to the latest props/state
+
+  // Store the latest handler to prevent stale closures
   const handlerRef = useRef<EventHandler<T, E>>(handler);
-  
-  // Update ref when handler changes
   useEffect(() => {
     handlerRef.current = handler;
   }, [handler]);
 
-  // Create a stable wrapper function that calls the latest handler
-  // This wrapper is what gets registered with socket.io
-  const stableHandler = useCallback((payload: any) => {
-    // Validate the payload before calling handler
-    const result = events.validate(eventName, payload);
-    
-    if (result.success) {
-      // Call the latest handler with validated data
-      handlerRef.current(result.data);
-    } else {
-      // Log validation errors but don't throw
-      console.error(
-        `[BoltSocket] Received invalid payload for event "${String(eventName)}":`,
-        result.error.issues
-      );
-    }
-  }, [eventName, events]);
+  // Stable wrapper: registered once, always delegates to latest handler
+  const stableHandler = useCallback(
+    (payload: unknown) => {
+      const start = performance.now();
+      const result = events.validate(eventName, payload);
 
-  useEffect(() => {
-    // Can't subscribe without socket
-    if (!socket) {
-      return;
-    }
+      if (result.success) {
+        // Phase 8: Record successful inbound trace
+        tracer.trace({
+          eventName: String(eventName),
+          direction: 'inbound',
+          payload: result.data,
+          validated: true,
+          durationMs: Math.round(performance.now() - start),
+        });
 
-    // Check if event exists in registry
-    if (!events.hasEvent(eventName)) {
-      console.error(
-        `[BoltSocket] Event "${String(eventName)}" not found in registry`
-      );
-      return;
-    }
+        logger.debug('event', `Received "${String(eventName)}"`, {
+          eventName,
+          payload: result.data,
+        });
 
-    // Subscribe to the event
-    console.log(`[BoltSocket] Subscribing to event: ${String(eventName)}`);
-    socket.on(String(eventName), stableHandler as any);
+        handlerRef.current(result.data);
+      } else {
+        // Phase 8: Record failed validation trace
+        const errorMsg = result.error.issues
+          .map(i => `${i.path.join('.')}: ${i.message}`)
+          .join('; ');
 
-    // Cleanup function - remove listener on unmount or deps change
-    return () => {
-      console.log(`[BoltSocket] Unsubscribing from event: ${String(eventName)}`);
-      socket.off(String(eventName), stableHandler as any);
-    };
-  }, [socket, eventName, stableHandler, events, ...deps]);
+        tracer.trace({
+          eventName: String(eventName),
+          direction: 'inbound',
+          payload,
+          validated: false,
+          validationError: errorMsg,
+        });
 
-  // Handle reconnection - reattach listeners
+        logger.warn('validation', `Invalid payload for "${String(eventName)}"`, {
+          eventName,
+          issues: result.error.issues,
+        });
+
+        // Always warn about data contract violations — they indicate a schema mismatch
+        console.warn(
+          `[BoltSocket] ⚠️  Invalid payload for event "${String(eventName)}". ` +
+          `Schema mismatch between server and client. Details: ${errorMsg}`
+        );
+      }
+    },
+    [eventName, events] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   useEffect(() => {
     if (!socket) return;
 
-    const handleReconnect = () => {
-      console.log(`[BoltSocket] Reconnected - reattaching listener for: ${String(eventName)}`);
-      // Listener is already attached via the main useEffect above
-      // This just logs for debugging
-    };
+    // Phase 8: Warning — event not in registry
+    if (!events.hasEvent(eventName)) {
+      logger.error('event', `Event "${String(eventName)}" not found in registry`, { eventName });
+      console.error(
+        `[BoltSocket] ❌ useSocketEvent called with unknown event "${String(eventName)}". ` +
+        `Available events: ${events.getEventNames().join(', ')}`
+      );
+      return;
+    }
 
-    socket.on('connect', handleReconnect);
+    logger.debug('event', `Subscribing to "${String(eventName)}"`, { eventName });
+    socket.on(String(eventName), stableHandler as any);
 
     return () => {
-      socket.off('connect', handleReconnect);
+      logger.debug('event', `Unsubscribing from "${String(eventName)}"`, { eventName });
+      socket.off(String(eventName), stableHandler as any);
     };
-  }, [socket, eventName]);
+  }, [socket, eventName, stableHandler, events, ...deps]);
 }
 
 /**
- * useSocketEventOnce - Subscribe to an event that fires only once
- * 
- * Automatically removes listener after first invocation.
- * 
- * @param eventName - Type-safe event name from registry
- * @param handler - Callback function with typed payload
- * 
+ * useSocketEventOnce — Subscribe to an event that fires exactly once.
+ *
+ * Automatically removes the listener after the first valid invocation.
+ * Validation is still applied — invalid payloads are rejected and the
+ * listener remains until a valid payload arrives.
+ *
+ * @param eventName - Type-safe event name from the registry
+ * @param handler   - Callback function with typed payload
+ *
  * @example
  * ```tsx
  * useSocketEventOnce('connection.established', (data) => {
- *   console.log('Connected with session:', data.sessionId);
+ *   console.log('Session ID:', data.sessionId);
  * });
  * ```
  */
@@ -141,32 +151,48 @@ export function useSocketEventOnce<T extends EventSchema, E extends EventNames<T
   }, [handler]);
 
   useEffect(() => {
-    if (!socket || firedRef.current) {
-      return;
-    }
+    if (!socket || firedRef.current) return;
 
     if (!events.hasEvent(eventName)) {
-      console.error(
-        `[BoltSocket] Event "${String(eventName)}" not found in registry`
-      );
+      logger.error('event', `Event "${String(eventName)}" not found in registry`, { eventName });
       return;
     }
 
-    const onceHandler = (payload: any) => {
+    const onceHandler = (payload: unknown) => {
       const result = events.validate(eventName, payload);
-      
+
       if (result.success) {
+        tracer.trace({
+          eventName: String(eventName),
+          direction: 'inbound',
+          payload: result.data,
+          validated: true,
+        });
+
+        logger.debug('event', `Once-event fired "${String(eventName)}"`, { eventName });
         handlerRef.current(result.data);
         firedRef.current = true;
       } else {
-        console.error(
-          `[BoltSocket] Received invalid payload for event "${String(eventName)}":`,
-          result.error.issues
-        );
+        const errorMsg = result.error.issues
+          .map(i => `${i.path.join('.')}: ${i.message}`)
+          .join('; ');
+
+        tracer.trace({
+          eventName: String(eventName),
+          direction: 'inbound',
+          payload,
+          validated: false,
+          validationError: errorMsg,
+        });
+
+        logger.warn('validation', `Invalid once-event payload for "${String(eventName)}"`, {
+          eventName,
+          issues: result.error.issues,
+        });
       }
     };
 
-    console.log(`[BoltSocket] Subscribing once to event: ${String(eventName)}`);
+    logger.debug('event', `Subscribing once to "${String(eventName)}"`, { eventName });
     socket.once(String(eventName), onceHandler as any);
 
     return () => {

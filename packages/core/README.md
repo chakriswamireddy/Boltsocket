@@ -1,43 +1,54 @@
 # @bolt-socket/core
 
-Core event registry and type system for bolt-socket.
+Core event registry, type system, logger, and tracer for bolt-socket.
 
 ## Installation
 
 ```bash
-npm install @bolt-socket/core zod
+pnpm add @bolt-socket/core zod
 ```
 
 ## Usage
 
-```typescript
+```ts
 import { createEventRegistry } from '@bolt-socket/core';
 import { z } from 'zod';
 
 const events = createEventRegistry({
   'order.updated': z.object({
     orderId: z.string(),
-    status: z.enum(['pending', 'completed'])
-  })
+    status: z.enum(['pending', 'shipped', 'delivered']),
+  }),
 });
 
-// Full type inference
-type Events = typeof events;
-// Autocomplete on event names
-// Runtime validation included
+// Validate without throwing
+const result = events.validate('order.updated', { orderId: '1', status: 'shipped' });
+if (result.success) console.log(result.data.status);
+
+// Parse (throws ValidationError on failure)
+const data = events.parse('order.updated', payload);
+
+// Introspect
+events.hasEvent('order.updated');   // true
+events.getEventNames();             // ['order.updated']
+events.getSchema('order.updated');  // ZodObject
+events.getSchemaMap();              // Readonly<{ 'order.updated': ZodObject }>
 ```
 
-## API
+## Observability
 
-### `createEventRegistry(schema)`
+```ts
+import { enableDebugLogs, enableEventTracing, onEventTraced } from '@bolt-socket/core';
 
-Creates a type-safe event registry with runtime validation.
+// Activate logging (silent by default)
+enableDebugLogs({ level: 'info', categories: ['connection', 'auth'] });
 
-**Parameters:**
-- `schema`: Object mapping event names to Zod schemas
-
-**Returns:**
-- Event registry with type inference and validation
+// Activate event tracing
+enableEventTracing();
+onEventTraced((trace) => {
+  if (!trace.validated) console.error('Validation failed', trace.eventName);
+});
+```
 
 ## License
 

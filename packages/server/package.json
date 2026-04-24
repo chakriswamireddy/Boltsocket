@@ -1,38 +1,68 @@
 {
   "name": "@bolt-socket/server",
-  "version": "0.1.0",
-  "description": "Socket.IO server abstraction for bolt-socket",
+  "version": "1.0.0",
+  "description": "Type-safe Socket.IO server abstraction with validation, rooms, auth, and event replay",
+  "license": "MIT",
+  "author": "BoltSocket Contributors",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
-    "test": "echo \"Tests coming soon\""
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chakriswamireddy/Boltsocket.git",
+    "directory": "packages/server"
+  },
+  "homepage": "https://github.com/chakriswamireddy/Boltsocket#readme",
+  "bugs": {
+    "url": "https://github.com/chakriswamireddy/Boltsocket/issues"
   },
   "keywords": [
     "websocket",
     "socket.io",
     "server",
     "typescript",
-    "type-safe"
+    "type-safe",
+    "real-time",
+    "rooms",
+    "authentication",
+    "event-replay",
+    "bolt-socket"
   ],
-  "author": "",
-  "license": "MIT",
   "peerDependencies": {
-    "@bolt-socket/core": "workspace:*",
-    "socket.io": "^4.6.0",
-    "zod": "^3.22.0"
+    "@bolt-socket/core": ">=1.0.0",
+    "socket.io": ">=4.6.0",
+    "zod": ">=3.22.0"
   },
   "devDependencies": {
     "@bolt-socket/core": "workspace:*",

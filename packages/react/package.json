@@ -1,38 +1,68 @@
 {
   "name": "@bolt-socket/react",
-  "version": "0.1.0",
-  "description": "React hooks and components for bolt-socket",
+  "version": "1.0.0",
+  "description": "React hooks and provider for type-safe real-time WebSocket events with auto-reconnect and observability",
+  "license": "MIT",
+  "author": "BoltSocket Contributors",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
-    "test": "echo \"Tests coming soon\""
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chakriswamireddy/Boltsocket.git",
+    "directory": "packages/react"
+  },
+  "homepage": "https://github.com/chakriswamireddy/Boltsocket#readme",
+  "bugs": {
+    "url": "https://github.com/chakriswamireddy/Boltsocket/issues"
   },
   "keywords": [
     "websocket",
+    "socket.io",
     "react",
     "hooks",
     "typescript",
-    "type-safe"
+    "type-safe",
+    "real-time",
+    "reconnect",
+    "observability",
+    "bolt-socket"
   ],
-  "author": "",
-  "license": "MIT",
   "peerDependencies": {
-    "@bolt-socket/core": "workspace:*",
-    "react": "^18.0.0",
-    "socket.io-client": "^4.6.0"
+    "@bolt-socket/core": ">=1.0.0",
+    "react": ">=18.0.0",
+    "socket.io-client": ">=4.6.0"
   },
   "devDependencies": {
     "@bolt-socket/core": "workspace:*",

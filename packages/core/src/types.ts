@@ -1,19 +1,46 @@
 import { z } from 'zod';
 
 /**
- * Event schema definition - maps event names to Zod schemas
- * 
+ * Event schema definition — maps event names to Zod schemas.
+ *
  * @example
  * ```ts
  * const schema = {
  *   'order.updated': z.object({ orderId: z.string() }),
  *   'user.connected': z.object({ userId: z.string() })
- * } as const satisfies EventSchema;
+ * } satisfies EventSchema;
  * ```
  */
 export type EventSchema = Record<string, z.ZodType<any, any, any>>;
- Provides full TypeScript inference for event payloads
- * 
+
+/**
+ * Strict, readonly variant of EventSchema for use with `as const satisfies`.
+ *
+ * @example
+ * ```ts
+ * const schema = {
+ *   'order.updated': z.object({ orderId: z.string() })
+ * } as const satisfies StrictEventSchema;
+ * ```
+ */
+export type StrictEventSchema = Readonly<Record<string, z.ZodType<any, any, any>>>;
+
+/**
+ * Extract event names from a schema as a string literal union.
+ * Enables autocomplete and type narrowing in IDEs.
+ *
+ * @example
+ * ```ts
+ * type MyEvents = EventNames<typeof schema>;
+ * // Result: 'order.updated' | 'user.connected'
+ * ```
+ */
+export type EventNames<T extends EventSchema> = keyof T & string;
+
+/**
+ * Infer the payload type for a specific event from its schema.
+ * Provides full TypeScript inference for event payloads.
+ *
  * @example
  * ```ts
  * type OrderPayload = EventPayload<typeof schema, 'order.updated'>;
@@ -26,9 +53,8 @@ export type EventPayload<
 > = z.infer<T[E]>;
 
 /**
- * Type-safe event map with inferred payloads
- * Maps each event name to its inferred payload type
- * 
+ * Maps each event name to its inferred payload type.
+ *
  * @example
  * ```ts
  * type AllEvents = EventMap<typeof schema>;
@@ -43,9 +69,8 @@ export type EventMap<T extends EventSchema> = {
 };
 
 /**
- * Extract specific event payload by name
- * Utility type for convenience
- * 
+ * Convenience alias for extracting a specific event payload.
+ *
  * @example
  * ```ts
  * type OrderEvent = ExtractEvent<typeof schema, 'order.updated'>;
@@ -54,40 +79,12 @@ export type EventMap<T extends EventSchema> = {
 export type ExtractEvent<
   T extends EventSchema,
   E extends EventNames<T>
-> = EventPayload<T, E>*/
-export type StrictEventSchema = Readonly<Record<string, z.ZodType<any, any, any>>>;
+> = EventPayload<T, E>;
 
 /**
- * Extract event names from schema as a string literal union
- * This enables autocomplete in IDE
- * 
- * @example
- * ```ts
- * type MyEvents = EventNames<typeof schema>;
- * // Result: 'order.updated' | 'user.connected'
- * ```
- */
-export type EventNames<T extends EventSchema> = keyof T & string;
-
-/**
- * Infer payload type from a specific event schema
- */
-export type EventPayload<
-  T extends EventSchema,
-  E extends EventNames<T>
-> = z.infer<T[E]>;
-
-/**
- * Type-safe event map with inferred payloads
- */
-export type EventMap<T extends EventSchema> = {
-  [K in EventNames<T>]: EventPayload<T, K>;
-};
-
-/**
- * Event validation result
- * Discriminated union for type-safe error handling
- * 
+ * Discriminated union for validation results.
+ * Enables type-safe error handling without throwing.
+ *
  * @example
  * ```ts
  * const result = registry.validate('order.updated', data);
@@ -103,53 +100,37 @@ export type ValidationResult<T> =
   | { success: false; error: z.ZodError };
 
 /**
- * Event registry interface with type-safe methods
- * All methods provide full TypeScript inference and autocomplete
- * 
- * @template T - Event schema type with string keys and Zod schemas
- * 
+ * Type-safe event registry interface.
+ * All methods provide full TypeScript inference and IDE autocomplete.
+ *
+ * @template T - Event schema type
+ *
  * @example
  * ```ts
  * const registry = createEventRegistry(schema);
- * 
+ *
  * // ✅ Autocomplete suggests event names
  * const schema = registry.getSchema('order.updated');
- * 
+ *
  * // ✅ Payload type is inferred
  * const result = registry.validate('order.updated', data);
  * ```
  */
 export interface EventRegistry<T extends EventSchema> {
   /**
-   * Get the Zod schema for a specific event
-   * 
+   * Get the Zod schema for a specific event.
+   *
    * @param eventName - Event name (autocompletes in IDE)
-   * @returns Zod schema for the event
    * @throws {UnknownEventError} If event doesn't exist
-   * 
-   * @example
-   * ```ts
-   * const schema = registry.getSchema('order.updated');
-   * const isValid = schema.safeParse(data).success;
-   * ```
    */
   getSchema<E extends EventNames<T>>(eventName: E): T[E];
 
   /**
-   * Validate an event payload against its schema (non-throwing)
-   * 
-   * @param eventName - Event name (autocompletes in IDE)
-   * @param payload - Data to validate
-   * @returns ValidationResult with typed data or error
-   * 
-   * @example
-   * ```ts
-   * const result = registry.validate('order.updated', data);
-   * if (result.success) {
-   *   // result.data is fully typed
-   *   console.log(result.data.orderId);
-   * }
-   * ```
+   * Validate a payload against its event schema (non-throwing).
+   *
+   * @param eventName - Event name
+   * @param payload   - Data to validate
+   * @returns Discriminated union: success with typed data or failure with error
    */
   validate<E extends EventNames<T>>(
     eventName: E,
@@ -157,23 +138,12 @@ export interface EventRegistry<T extends EventSchema> {
   ): ValidationResult<EventPayload<T, E>>;
 
   /**
-   * Parse and validate an event payload (throws on error)
-   * 
-   * @param eventName - Event name (autocompletes in IDE)
-   * @param payload - Data to validate
-   * @returns Validated and typed payload
+   * Parse and validate a payload, throwing on failure.
+   *
+   * @param eventName - Event name
+   * @param payload   - Data to validate
    * @throws {ValidationError} If validation fails
    * @throws {UnknownEventError} If event doesn't exist
-   * 
-   * @example
-   * ```ts
-   * try {
-   *   const data = registry.parse('order.updated', input);
-   *   // data is fully typed
-   * } catch (error) {
-   *   console.error('Invalid payload');
-   * }
-   * ```
    */
   parse<E extends EventNames<T>>(
     eventName: E,
@@ -181,44 +151,18 @@ export interface EventRegistry<T extends EventSchema> {
   ): EventPayload<T, E>;
 
   /**
-   * Check if an event name exists in the registry (type guard)
-   * 
-   * @param eventName - Event name to check
-   * @returns True if event exists (narrows type)
-   * 
-   * @example
-   * ```ts
-   * if (registry.hasEvent(name)) {
-   *   // name is narrowed to EventNames<T>
-   *   registry.getSchema(name);
-   * }
-   * ```
+   * Type guard that checks whether an event name exists in the registry.
+   * Narrows the type of `eventName` to `EventNames<T>` on truthy branch.
    */
   hasEvent(eventName: string): eventName is EventNames<T>;
 
   /**
-   * Get all registered event names as an array
-   * 
-   * @returns Array of event name strings
-   * 
-   * @example
-   * ```ts
-   * const events = registry.getEventNames();
-   * // ['order.updated', 'user.connected']
-   * ```
+   * Get all registered event names as an array.
    */
   getEventNames(): EventNames<T>[];
 
   /**
-   * Get the raw schema object (readonly)
-   * 
-   * @returns Readonly schema map
-   * 
-   * @example
-   * ```ts
-   * const schemas = registry.getSchemaMap();
-   * const orderSchema = schemas['order.updated'];
-   * ```
+   * Get the raw schema object (readonly).
    */
   getSchemaMap(): Readonly<T>;
 }

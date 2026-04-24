@@ -1,49 +1,56 @@
 # @bolt-socket/server
 
-Socket.IO server abstraction with type-safe event emission.
+Type-safe Socket.IO server wrapper with auth, rooms, and event replay.
 
 ## Installation
 
 ```bash
-npm install @bolt-socket/server @bolt-socket/core socket.io zod
+pnpm add @bolt-socket/core @bolt-socket/server zod socket.io
 ```
 
-## Quick Start
+## Usage
 
-```typescript
+```ts
+import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { createSocketServer } from '@bolt-socket/server';
-import { createEventRegistry } from '@bolt-socket/core';
-import { z } from 'zod';
+import { events } from './events'; // createEventRegistry(...)
 
-// 1. Define events
-const events = createEventRegistry({
-  'order.updated': z.object({
-    orderId: z.string(),
-    status: z.enum(['pending', 'completed'])
-  })
+const http = createServer();
+const io = new Server(http);
+
+const server = createSocketServer({
+  events,
+  io,
+
+  // Auth middleware (optional)
+  auth: async (socket) => {
+    const user = await verifyToken(socket.handshake.auth.token);
+    return { success: true, context: { userId: user.id } };
+  },
+
+  // Event replay on reconnect (optional)
+  reliability: {
+    replay: { enabled: true, bufferSize: 500, ttlMs: 30_000 },
+  },
 });
 
-// 2. Create Socket.IO server
-const io = new Server(httpServer);
+// Broadcast
+server.emit('notification', { message: 'Hello', type: 'info' });
 
-// 3. Create typed server wrapper
-const server = createSocketServer({ events, io });
+// Rooms
+server.toRoom('order:123').emit('order.updated', { orderId: '123', status: 'shipped' });
+server.joinRoom(socketId, 'order:123');
+server.leaveRoom(socketId, 'order:123');
 
-// 4. Emit type-safe events
-server.emit('order.updated', {
-  orderId: '123',
-  status: 'completed'
+// Reconnect hook
+server.onClientReconnect((socket, missedEvents) => {
+  console.log(`Replaying ${missedEvents.length} missed events to ${socket.id}`);
 });
+
+http.listen(3001);
 ```
 
-## Features
+## License
 
-- ✅ **Type-safe emit** - Full TypeScript inference from event registry
-- ✅ **Automatic validation** - Zod validates payloads before emit
-- ✅ **Unknown event prevention** - Runtime checks prevent invalid events
-- ✅ **Clean abstraction** - Minimal wrapper over Socket.IO
-
-## API
-
-See [API Reference](../../API-REFERENCE.md) for complete documentation.
+MIT

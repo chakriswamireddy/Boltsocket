@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 import type { Socket } from 'socket.io-client';
-import type { EventSchema, EventRegistry, EventNames, EventPayload } from '@bolt-socket/core';
+import type { EventSchema, EventRegistry, EventNames, EventPayload, ReconnectOptions } from '@bolt-socket/core';
 import type { ManagerOptions, SocketOptions } from 'socket.io-client';
+
+export type { ReconnectOptions };
 
 /**
  * Socket.IO client options type
@@ -208,6 +210,57 @@ export interface SocketProviderProps<T extends EventSchema> {
    * Called when socket attempts to reconnect
    */
   onReconnectAttempt?: (attemptNumber: number) => void;
+
+  /**
+   * Called after the socket successfully reconnects.
+   * Use this to re-fetch critical data or show "back online" UI.
+   *
+   * @param attempt - The attempt number that succeeded
+   *
+   * @example
+   * ```tsx
+   * onReconnect={(attempt) => {
+   *   console.log(`Reconnected after ${attempt} attempts`);
+   *   refetchCriticalData();
+   *   toast.success('Connection restored!');
+   * }}
+   * ```
+   */
+  onReconnect?: (attempt: number) => void;
+
+  /**
+   * Fine-grained reconnection strategy.
+   * When omitted, Socket.IO defaults are used (1s base delay, up to 5s, Infinity attempts).
+   *
+   * @example
+   * ```tsx
+   * reconnect={{
+   *   maxAttempts: 10,
+   *   delay: 500,
+   *   maxDelay: 15000,
+   *   randomization: 0.3
+   * }}
+   * ```
+   */
+  reconnect?: ReconnectOptions;
+
+  /**
+   * Automatically request missed events from the server after reconnecting.
+   * Requires the server to have `reliability.replay.enabled = true`.
+   *
+   * When `true`, the provider sends `bolt:sync` with the last connection
+   * timestamp immediately after reconnect, triggering event replay.
+   *
+   * @default false
+   *
+   * @example
+   * ```tsx
+   * <SocketProvider syncOnReconnect events={events} url={url}>
+   *   {/* Use useEventReplay() inside to consume replayed events *\/}
+   * </SocketProvider>
+   * ```
+   */
+  syncOnReconnect?: boolean;
 
   /**
    * Child components that can use socket hooks

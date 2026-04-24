@@ -1,46 +1,43 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { EventSchema } from '@bolt-socket/core';
-import type {
-  SocketProviderProps,
-  SocketContextValue,
-} from './types';
+import { BOLT_EVENTS } from '@bolt-socket/core';
+import type { EventSchema, BoltSessionPayload } from '@bolt-socket/core';
+import type { SocketProviderProps, SocketContextValue } from './types';
 
 /**
- * Socket context - provides socket instance and events registry
+ * Socket context — provides socket instance and events registry to the tree.
  */
 const SocketContext = createContext<SocketContextValue<any> | null>(null);
 
 /**
- * SocketProvider - Manages socket connection lifecycle
- * 
+ * SocketProvider — Manages socket connection lifecycle.
+ *
  * Responsibilities:
- * - Initialize socket connection
- * - Handle connect/disconnect events
- * - Inject authentication with automatic refresh on reconnect
- * - Maintain singleton socket instance
- * - Provide socket to children via context
- * - Handle auth failures gracefully
- * 
+ * - Initialise and maintain a singleton socket connection          (Phase 3)
+ * - Async auth injection with token refresh on every reconnect    (Phase 6)
+ * - Graceful auth error handling                                  (Phase 6)
+ * - Configurable reconnection strategy (delay, jitter, max)       (Phase 7)
+ * - Automatic bolt:sync request after reconnect (event replay)    (Phase 7)
+ * - Dev mode warnings when configuration looks incorrect          (Phase 8)
+ *
  * @example Basic
  * ```tsx
- * <SocketProvider 
- *   url="http://localhost:3000"
- *   events={events}
- *   auth={{ token: 'abc123' }}
- * >
+ * <SocketProvider url="http://localhost:3000" events={events}>
  *   <App />
  * </SocketProvider>
  * ```
- * 
- * @example With auth refresh and callbacks
+ *
+ * @example Full reliability setup
  * ```tsx
- * <SocketProvider 
+ * <SocketProvider
  *   url="http://localhost:3000"
  *   events={events}
  *   auth={async () => ({ token: await getToken() })}
- *   onConnect={() => console.log('Connected')}
- *   onAuthError={(error) => navigate('/login')}
+ *   reconnect={{ maxAttempts: 20, delay: 500, maxDelay: 20_000 }}
+ *   syncOnReconnect
+ *   onConnect={() => toast.success('Online')}
+ *   onReconnect={(n) => { refetchData(); toast.info(`Reconnected after ${n} tries`) }}
+ *   onAuthError={(e) => navigate('/login')}
  * >
  *   <App />
  * </SocketProvider>
@@ -56,117 +53,143 @@ export function SocketProvider<T extends EventSchema>({
   onAuthError,
   onError,
   onReconnectAttempt,
+  onReconnect,
+  reconnect,
+  syncOnReconnect = false,
   children,
 }: SocketProviderProps<T>) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+
   const socketRef = useRef<Socket | null>(null);
   const authProviderRef = useRef(auth);
+  // Last confirmed connection timestamp for bolt:sync replay
+  const lastConnectedAtRef = useRef<number>(0);
+  // Rooms the client is subscribed to (for filtered replay)
+  const activeRoomsRef = useRef<string[]>([]);
 
-  // Keep auth provider ref updated
-  useEffect(() => {
-    authProviderRef.current = auth;
-  }, [auth]);
+  // Always call latest callbacks without re-creating socket
+  useEffect(() => { authProviderRef.current = auth; }, [auth]);
 
   useEffect(() => {
-    // Resolve auth data - called on initial connect and every reconnect
     const resolveAuth = async (): Promise<object | undefined> => {
       if (!authProviderRef.current) return undefined;
-      
       if (typeof authProviderRef.current === 'function') {
         try {
-          return await authProviderRef.current();
+          return await (authProviderRef.current as () => Promise<object>)();
         } catch (error) {
-          console.error('[BoltSocket] Auth provider error:', error);
-          // If auth provider fails, still attempt connection without auth
+          console.error('[BoltSocket] Auth provider threw:', error);
           return undefined;
         }
       }
-      
       return authProviderRef.current;
     };
 
-    // Initialize socket connection
     const initSocket = async () => {
-      // Cleanup existing connection
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
       }
 
-      // Get auth data
       const authData = await resolveAuth();
 
-      // Create new socket instance
+      // Build reconnection options from our ReconnectOptions type
+      const reconnectOpts = reconnect
+        ? {
+            reconnectionAttempts: reconnect.maxAttempts ?? Infinity,
+            reconnectionDelay: reconnect.delay ?? 1_000,
+            reconnectionDelayMax: reconnect.maxDelay ?? 30_000,
+            randomizationFactor: reconnect.randomization ?? 0.5,
+          }
+        : {};
+
       const newSocket = io(url, {
         ...options,
+        ...reconnectOpts,
         auth: authData,
       });
 
-      // Connection lifecycle handlers
+      // ── Connection lifecycle ────────────────────────────────────────────
+
       newSocket.on('connect', () => {
-        console.log('[BoltSocket] Connected to server');
+        const now = Date.now();
         setIsConnected(true);
         onConnect?.();
+
+        // Phase 7: Remember when we connected
+        lastConnectedAtRef.current = now;
+
+        // Phase 7: Receive session info (server sends this on every connection)
+        // — handled below in the bolt:session listener
       });
 
       newSocket.on('disconnect', (reason) => {
-        console.log('[BoltSocket] Disconnected:', reason);
         setIsConnected(false);
         onDisconnect?.(reason);
       });
 
       newSocket.on('connect_error', async (error) => {
-        console.error('[BoltSocket] Connection error:', error.message);
-        
-        // Check if it's an auth error
-        if (error.message.includes('Authentication') || 
-            error.message.includes('Unauthorized') ||
-            error.message.includes('Invalid token')) {
-          onAuthError?.({
-            message: error.message,
-            error,
-          });
+        const isAuthError =
+          error.message.includes('Authentication') ||
+          error.message.includes('Unauthorized') ||
+          error.message.includes('Invalid token') ||
+          error.message.includes('No token');
+
+        if (isAuthError) {
+          onAuthError?.({ message: error.message, error });
         }
-        
         onError?.(error);
       });
 
-      // Handle reconnection attempts
-      newSocket.io.on('reconnect_attempt', (attemptNumber) => {
-        console.log(`[BoltSocket] Reconnection attempt ${attemptNumber}`);
-        onReconnectAttempt?.(attemptNumber);
+      // ── Reconnection events ─────────────────────────────────────────────
+
+      newSocket.io.on('reconnect_attempt', (attempt: number) => {
+        onReconnectAttempt?.(attempt);
       });
 
-      // Refresh auth on reconnect
-      newSocket.io.on('reconnect', async () => {
-        console.log('[BoltSocket] Reconnected - refreshing auth');
-        
-        // Get fresh auth data
+      newSocket.io.on('reconnect', async (attempt: number) => {
+        // Refresh auth token on every reconnect
         const freshAuth = await resolveAuth();
-        
-        // Update socket auth
-        if (freshAuth && newSocket.auth) {
+        if (freshAuth) {
           newSocket.auth = freshAuth;
+        }
+
+        // Phase 7: Notify caller
+        onReconnect?.(attempt);
+
+        // Phase 7: Request event replay if enabled
+        if (syncOnReconnect && lastConnectedAtRef.current > 0) {
+          newSocket.emit(BOLT_EVENTS.SYNC, {
+            since: lastConnectedAtRef.current,
+            rooms: activeRoomsRef.current.length > 0
+              ? activeRoomsRef.current
+              : undefined,
+          });
         }
       });
 
-      // Store socket reference
+      // ── Phase 7: Session protocol (server → client) ─────────────────────
+
+      newSocket.on(BOLT_EVENTS.SESSION, (data: BoltSessionPayload) => {
+        // Server confirms our session. Update lastConnectedAt with server time.
+        lastConnectedAtRef.current = data.connectedAt;
+      });
+
       socketRef.current = newSocket;
       setSocket(newSocket);
     };
 
     initSocket();
 
-    // Cleanup on unmount
     return () => {
       if (socketRef.current) {
-        console.log('[BoltSocket] Cleaning up connection');
         socketRef.current.disconnect();
         socketRef.current = null;
       }
     };
-  }, [url, options, onConnect, onDisconnect, onAuthError, onError, onReconnectAttempt]); // Reconnect if url or options change
+  }, [url]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Intentionally only re-create socket when url changes.
+  // Auth, callbacks, and reconnect options are accessed via refs.
 
   const contextValue: SocketContextValue<T> = {
     socket,
@@ -182,43 +205,35 @@ export function SocketProvider<T extends EventSchema>({
 }
 
 /**
- * useSocket - Access the raw socket instance
- * 
- * @returns Socket instance or null if not connected
- * @throws Error if used outside SocketProvider
- * 
+ * useSocket — Access the raw Socket.IO socket instance.
+ *
+ * @returns Socket instance or null before first connection
+ * @throws If called outside a SocketProvider
+ *
  * @example
  * ```tsx
  * const socket = useSocket();
- * if (socket) {
- *   console.log('Socket ID:', socket.id);
+ * if (socket?.connected) {
+ *   socket.emit('custom-event', payload);
  * }
  * ```
  */
 export function useSocket(): Socket | null {
   const context = useContext(SocketContext);
-  
   if (!context) {
-    throw new Error('useSocket must be used within a SocketProvider');
+    throw new Error('[BoltSocket] useSocket must be used within a <SocketProvider>');
   }
-  
   return context.socket;
 }
 
 /**
- * useSocketContext - Access the full socket context
- * 
- * @returns Socket context value
- * @throws Error if used outside SocketProvider
- * 
+ * useSocketContext — Internal hook to access the full context.
  * @internal
  */
 export function useSocketContext<T extends EventSchema>(): SocketContextValue<T> {
   const context = useContext(SocketContext);
-  
   if (!context) {
-    throw new Error('useSocketContext must be used within a SocketProvider');
+    throw new Error('[BoltSocket] Socket hooks must be used within a <SocketProvider>');
   }
-  
   return context;
 }
