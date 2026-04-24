@@ -1,7 +1,13 @@
-import type { ReactNode } from 'react';
-import type { Socket } from 'socket.io-client';
-import type { EventSchema, EventRegistry, EventNames, EventPayload, ReconnectOptions } from '../core';
-import type { ManagerOptions, SocketOptions } from 'socket.io-client';
+import type { ReactNode } from "react";
+import type { Socket } from "socket.io-client";
+import type {
+  EventSchema,
+  EventRegistry,
+  EventNames,
+  EventPayload,
+  ReconnectOptions,
+} from "../core";
+import type { ManagerOptions, SocketOptions } from "socket.io-client";
 
 export type { ReconnectOptions };
 
@@ -12,12 +18,12 @@ export type SocketIOClientOptions = Partial<ManagerOptions & SocketOptions>;
 
 /**
  * Auth data provider - can be static object or async function
- * 
+ *
  * @example Static auth
  * ```ts
  * auth={{ token: 'abc123' }}
  * ```
- * 
+ *
  * @example Async auth provider
  * ```ts
  * auth={async () => {
@@ -36,7 +42,7 @@ export interface AuthError {
    * Error message from server
    */
   message: string;
-  
+
   /**
    * Original error object
    */
@@ -49,7 +55,7 @@ export interface AuthError {
 export interface SocketCallbacks {
   /**
    * Called when connection is successfully established
-   * 
+   *
    * @example
    * ```tsx
    * onConnect={() => {
@@ -62,9 +68,9 @@ export interface SocketCallbacks {
 
   /**
    * Called when connection is lost
-   * 
+   *
    * @param reason - Disconnect reason from Socket.IO
-   * 
+   *
    * @example
    * ```tsx
    * onDisconnect={(reason) => {
@@ -80,9 +86,9 @@ export interface SocketCallbacks {
   /**
    * Called when authentication fails
    * Use this to redirect to login, show error message, etc.
-   * 
+   *
    * @param error - Auth error details
-   * 
+   *
    * @example
    * ```tsx
    * onAuthError={(error) => {
@@ -96,9 +102,9 @@ export interface SocketCallbacks {
 
   /**
    * Called when any connection error occurs
-   * 
+   *
    * @param error - Error object
-   * 
+   *
    * @example
    * ```tsx
    * onError={(error) => {
@@ -111,9 +117,9 @@ export interface SocketCallbacks {
 
   /**
    * Called when socket attempts to reconnect
-   * 
+   *
    * @param attemptNumber - Current reconnection attempt number
-   * 
+   *
    * @example
    * ```tsx
    * onReconnectAttempt={(attempt) => {
@@ -126,9 +132,9 @@ export interface SocketCallbacks {
 
 /**
  * Socket provider props
- * 
+ *
  * @template T - Event schema type
- * 
+ *
  * @example Basic usage
  * ```tsx
  * <SocketProvider
@@ -139,7 +145,7 @@ export interface SocketCallbacks {
  *   <App />
  * </SocketProvider>
  * ```
- * 
+ *
  * @example With callbacks
  * ```tsx
  * <SocketProvider
@@ -156,7 +162,7 @@ export interface SocketCallbacks {
 export interface SocketProviderProps<T extends EventSchema> {
   /**
    * Socket.IO server URL
-   * 
+   *
    * @example 'http://localhost:3000'
    * @example 'https://api.example.com'
    */
@@ -172,7 +178,7 @@ export interface SocketProviderProps<T extends EventSchema> {
    * Optional authentication data or provider function
    * Can be a static object or async function that returns auth data
    * On reconnect, function will be called again to refresh auth data
-   * 
+   *
    * @example Static: `{ token: 'abc123' }`
    * @example Async: `async () => ({ token: await getToken() })`
    */
@@ -180,7 +186,7 @@ export interface SocketProviderProps<T extends EventSchema> {
 
   /**
    * Additional Socket.IO client options
-   * 
+   *
    * @see https://socket.io/docs/v4/client-options/
    */
   options?: SocketIOClientOptions;
@@ -270,7 +276,7 @@ export interface SocketProviderProps<T extends EventSchema> {
 
 /**
  * Socket context value (internal)
- * 
+ *
  * @template T - Event schema type
  */
 export interface SocketContextValue<T extends EventSchema> {
@@ -292,12 +298,12 @@ export interface SocketContextValue<T extends EventSchema> {
 
 /**
  * Event handler function type
- * 
+ *
  * Strongly typed callback that receives validated event payload
- * 
+ *
  * @template T - Event schema type
  * @template E - Specific event name
- * 
+ *
  * @example
  * ```ts
  * const handler: EventHandler<typeof schema, 'order.updated'> = (data) => {
@@ -307,5 +313,5 @@ export interface SocketContextValue<T extends EventSchema> {
  * ```
  */
 export type EventHandler<T extends EventSchema, E extends EventNames<T>> = (
-  payload: EventPayload<T, E>
+  payload: EventPayload<T, E>,
 ) => void;

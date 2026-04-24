@@ -17,14 +17,14 @@ This package provides three subpath exports:
 Type-safe event registry with Zod validation.
 
 ```typescript
-import { createEventRegistry } from 'boltsocket/core';
-import { z } from 'zod';
+import { createEventRegistry } from "boltsocket/core";
+import { z } from "zod";
 
 const events = createEventRegistry({
-  'chat:message': z.object({
+  "chat:message": z.object({
     message: z.string(),
-    userId: z.string()
-  })
+    userId: z.string(),
+  }),
 });
 ```
 
@@ -33,12 +33,12 @@ const events = createEventRegistry({
 Socket.IO server with validation, rooms, auth, and event replay.
 
 ```typescript
-import { createSocketServer } from 'boltsocket/server';
+import { createSocketServer } from "boltsocket/server";
 
 const io = createSocketServer(httpServer, events, {
   onConnection: (socket) => {
-    console.log('Connected:', socket.id);
-  }
+    console.log("Connected:", socket.id);
+  },
 });
 ```
 
@@ -47,7 +47,7 @@ const io = createSocketServer(httpServer, events, {
 React hooks and provider for WebSocket events.
 
 ```tsx
-import { SocketProvider, useSocketEvent } from 'boltsocket/react';
+import { SocketProvider, useSocketEvent } from "boltsocket/react";
 
 function App() {
   return (
@@ -58,10 +58,10 @@ function App() {
 }
 
 function Chat() {
-  useSocketEvent(events, 'chat:message', (data) => {
+  useSocketEvent(events, "chat:message", (data) => {
     console.log(data.message);
   });
-  
+
   return <div>Chat App</div>;
 }
 ```

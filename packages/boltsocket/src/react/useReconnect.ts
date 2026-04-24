@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { BOLT_EVENTS } from '../core';
-import type { EventReplayEntry } from '../core';
-import { useSocketContext } from './SocketProvider';
+import { useEffect, useRef, useState } from "react";
+import { BOLT_EVENTS } from "../core";
+import type { EventReplayEntry } from "../core";
+import { useSocketContext } from "./SocketProvider";
 
 /**
  * Snapshot of the current connection state, updated in real time.
@@ -73,9 +73,9 @@ export function useReconnect(callback: (attempt: number) => void): void {
     };
 
     // socket.io is the Manager instance, which fires 'reconnect' after success
-    socket.io.on('reconnect', handleReconnect);
+    socket.io.on("reconnect", handleReconnect);
     return () => {
-      socket.io.off('reconnect', handleReconnect);
+      socket.io.off("reconnect", handleReconnect);
     };
   }, [socket]);
 }
@@ -108,7 +108,9 @@ export function useConnectionStatus(): ConnectionStatus {
 
   const [reconnectCount, setReconnectCount] = useState(0);
   const [lastConnectedAt, setLastConnectedAt] = useState<Date | null>(null);
-  const [lastDisconnectedAt, setLastDisconnectedAt] = useState<Date | null>(null);
+  const [lastDisconnectedAt, setLastDisconnectedAt] = useState<Date | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!socket) return;
@@ -122,18 +124,18 @@ export function useConnectionStatus(): ConnectionStatus {
     };
 
     const handleReconnect = () => {
-      setReconnectCount(c => c + 1);
+      setReconnectCount((c) => c + 1);
       setLastConnectedAt(new Date());
     };
 
-    socket.on('connect', handleConnect);
-    socket.on('disconnect', handleDisconnect);
-    socket.io.on('reconnect', handleReconnect);
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.io.on("reconnect", handleReconnect);
 
     return () => {
-      socket.off('connect', handleConnect);
-      socket.off('disconnect', handleDisconnect);
-      socket.io.off('reconnect', handleReconnect);
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.io.off("reconnect", handleReconnect);
     };
   }, [socket]);
 

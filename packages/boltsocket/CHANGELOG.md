@@ -3,6 +3,7 @@
 ## [1.0.0] - 2026-04-24
 
 ### Added
+
 - Initial release with unified package structure
 - Core: Type-safe event registry with Zod validation
 - Server: Socket.IO server abstraction with rooms, auth, and event replay

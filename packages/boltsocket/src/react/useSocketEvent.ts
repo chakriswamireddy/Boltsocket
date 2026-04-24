@@ -1,8 +1,8 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { logger, tracer } from '../core';
-import type { EventSchema, EventNames } from '../core';
-import type { EventHandler } from './types';
-import { useSocketContext } from './SocketProvider';
+import { useEffect, useRef, useCallback } from "react";
+import { logger, tracer } from "../core";
+import type { EventSchema, EventNames } from "../core";
+import type { EventHandler } from "./types";
+import { useSocketContext } from "./SocketProvider";
 
 /**
  * useSocketEvent — Subscribe to a typed socket event with automatic cleanup.
@@ -37,7 +37,7 @@ import { useSocketContext } from './SocketProvider';
 export function useSocketEvent<T extends EventSchema, E extends EventNames<T>>(
   eventName: E,
   handler: EventHandler<T, E>,
-  deps: React.DependencyList = []
+  deps: React.DependencyList = [],
 ): void {
   const { socket, events } = useSocketContext<T>();
 
@@ -57,13 +57,13 @@ export function useSocketEvent<T extends EventSchema, E extends EventNames<T>>(
         // Phase 8: Record successful inbound trace
         tracer.trace({
           eventName: String(eventName),
-          direction: 'inbound',
+          direction: "inbound",
           payload: result.data,
           validated: true,
           durationMs: Math.round(performance.now() - start),
         });
 
-        logger.debug('event', `Received "${String(eventName)}"`, {
+        logger.debug("event", `Received "${String(eventName)}"`, {
           eventName,
           payload: result.data,
         });
@@ -72,30 +72,34 @@ export function useSocketEvent<T extends EventSchema, E extends EventNames<T>>(
       } else {
         // Phase 8: Record failed validation trace
         const errorMsg = result.error.issues
-          .map(i => `${i.path.join('.')}: ${i.message}`)
-          .join('; ');
+          .map((i) => `${i.path.join(".")}: ${i.message}`)
+          .join("; ");
 
         tracer.trace({
           eventName: String(eventName),
-          direction: 'inbound',
+          direction: "inbound",
           payload,
           validated: false,
           validationError: errorMsg,
         });
 
-        logger.warn('validation', `Invalid payload for "${String(eventName)}"`, {
-          eventName,
-          issues: result.error.issues,
-        });
+        logger.warn(
+          "validation",
+          `Invalid payload for "${String(eventName)}"`,
+          {
+            eventName,
+            issues: result.error.issues,
+          },
+        );
 
         // Always warn about data contract violations — they indicate a schema mismatch
         console.warn(
           `[BoltSocket] ⚠️  Invalid payload for event "${String(eventName)}". ` +
-          `Schema mismatch between server and client. Details: ${errorMsg}`
+            `Schema mismatch between server and client. Details: ${errorMsg}`,
         );
       }
     },
-    [eventName, events] // eslint-disable-line react-hooks/exhaustive-deps
+    [eventName, events], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   useEffect(() => {
@@ -103,19 +107,27 @@ export function useSocketEvent<T extends EventSchema, E extends EventNames<T>>(
 
     // Phase 8: Warning — event not in registry
     if (!events.hasEvent(eventName)) {
-      logger.error('event', `Event "${String(eventName)}" not found in registry`, { eventName });
+      logger.error(
+        "event",
+        `Event "${String(eventName)}" not found in registry`,
+        { eventName },
+      );
       console.error(
         `[BoltSocket] ❌ useSocketEvent called with unknown event "${String(eventName)}". ` +
-        `Available events: ${events.getEventNames().join(', ')}`
+          `Available events: ${events.getEventNames().join(", ")}`,
       );
       return;
     }
 
-    logger.debug('event', `Subscribing to "${String(eventName)}"`, { eventName });
+    logger.debug("event", `Subscribing to "${String(eventName)}"`, {
+      eventName,
+    });
     socket.on(String(eventName), stableHandler as any);
 
     return () => {
-      logger.debug('event', `Unsubscribing from "${String(eventName)}"`, { eventName });
+      logger.debug("event", `Unsubscribing from "${String(eventName)}"`, {
+        eventName,
+      });
       socket.off(String(eventName), stableHandler as any);
     };
   }, [socket, eventName, stableHandler, events, ...deps]);
@@ -138,10 +150,10 @@ export function useSocketEvent<T extends EventSchema, E extends EventNames<T>>(
  * });
  * ```
  */
-export function useSocketEventOnce<T extends EventSchema, E extends EventNames<T>>(
-  eventName: E,
-  handler: EventHandler<T, E>
-): void {
+export function useSocketEventOnce<
+  T extends EventSchema,
+  E extends EventNames<T>,
+>(eventName: E, handler: EventHandler<T, E>): void {
   const { socket, events } = useSocketContext<T>();
   const handlerRef = useRef<EventHandler<T, E>>(handler);
   const firedRef = useRef(false);
@@ -154,7 +166,11 @@ export function useSocketEventOnce<T extends EventSchema, E extends EventNames<T
     if (!socket || firedRef.current) return;
 
     if (!events.hasEvent(eventName)) {
-      logger.error('event', `Event "${String(eventName)}" not found in registry`, { eventName });
+      logger.error(
+        "event",
+        `Event "${String(eventName)}" not found in registry`,
+        { eventName },
+      );
       return;
     }
 
@@ -164,35 +180,43 @@ export function useSocketEventOnce<T extends EventSchema, E extends EventNames<T
       if (result.success) {
         tracer.trace({
           eventName: String(eventName),
-          direction: 'inbound',
+          direction: "inbound",
           payload: result.data,
           validated: true,
         });
 
-        logger.debug('event', `Once-event fired "${String(eventName)}"`, { eventName });
+        logger.debug("event", `Once-event fired "${String(eventName)}"`, {
+          eventName,
+        });
         handlerRef.current(result.data);
         firedRef.current = true;
       } else {
         const errorMsg = result.error.issues
-          .map(i => `${i.path.join('.')}: ${i.message}`)
-          .join('; ');
+          .map((i) => `${i.path.join(".")}: ${i.message}`)
+          .join("; ");
 
         tracer.trace({
           eventName: String(eventName),
-          direction: 'inbound',
+          direction: "inbound",
           payload,
           validated: false,
           validationError: errorMsg,
         });
 
-        logger.warn('validation', `Invalid once-event payload for "${String(eventName)}"`, {
-          eventName,
-          issues: result.error.issues,
-        });
+        logger.warn(
+          "validation",
+          `Invalid once-event payload for "${String(eventName)}"`,
+          {
+            eventName,
+            issues: result.error.issues,
+          },
+        );
       }
     };
 
-    logger.debug('event', `Subscribing once to "${String(eventName)}"`, { eventName });
+    logger.debug("event", `Subscribing once to "${String(eventName)}"`, {
+      eventName,
+    });
     socket.once(String(eventName), onceHandler as any);
 
     return () => {
