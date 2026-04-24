@@ -14,8 +14,7 @@
     "example:all": "npm run example:basic && npm run example:server && npm run example:rooms && npm run example:auth && npm run example:edge-cases && npm run example:types"
   },
   "devDependencies": {
-    "@chakri-ch/core": "workspace:*",
-    "@chakri-ch/server": "workspace:*",
+    "@bolt-socket/boltsocket": "workspace:*",
     "socket.io": "^4.6.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",

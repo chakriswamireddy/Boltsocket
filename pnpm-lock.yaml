@@ -14,18 +14,39 @@ importers:
 
   examples:
     devDependencies:
-      '@chakri-ch/core':
+      '@bolt-socket/boltsocket':
         specifier: workspace:*
-        version: link:../packages/core
-      '@chakri-ch/server':
-        specifier: workspace:*
-        version: link:../packages/server
+        version: link:../packages/boltsocket
       socket.io:
         specifier: ^4.6.0
         version: 4.8.3
       tsx:
         specifier: ^4.7.0
         version: 4.21.0
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      zod:
+        specifier: ^3.22.0
+        version: 3.25.76
+
+  packages/boltsocket:
+    devDependencies:
+      '@types/react':
+        specifier: ^18.2.0
+        version: 18.3.28
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
+      socket.io:
+        specifier: ^4.6.0
+        version: 4.8.3
+      socket.io-client:
+        specifier: ^4.6.0
+        version: 4.8.3
+      tsup:
+        specifier: ^8.0.1
+        version: 8.5.1(tsx@4.21.0)(typescript@5.9.3)
       typescript:
         specifier: ^5.3.3
         version: 5.9.3

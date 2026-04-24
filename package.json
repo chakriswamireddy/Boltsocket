@@ -10,20 +10,12 @@
     "examples"
   ],
   "scripts": {
-    "build": "pnpm run build:core && pnpm run build:server && pnpm run build:react",
-    "build:core": "pnpm --filter @chakri-ch/core run build",
-    "build:server": "pnpm --filter @chakri-ch/server run build",
-    "build:react": "pnpm --filter @chakri-ch/react run build",
-    "dev:core": "pnpm --filter @chakri-ch/core run dev",
-    "dev:server": "pnpm --filter @chakri-ch/server run dev",
-    "dev:react": "pnpm --filter @chakri-ch/react run dev",
-    "typecheck": "pnpm -r run typecheck",
-    "clean": "pnpm -r exec rm -rf dist",
-    "publish:core": "pnpm --filter @chakri-ch/core publish",
-    "publish:server": "pnpm --filter @chakri-ch/server publish",
-    "publish:react": "pnpm --filter @chakri-ch/react publish",
-    "publish:all": "pnpm run build && pnpm run publish:core && pnpm run publish:server && pnpm run publish:react",
-    "publish:dry": "pnpm run build && pnpm -r exec -- npm pack --dry-run"
+    "build": "pnpm --filter @bolt-socket/boltsocket run build",
+    "dev": "pnpm --filter @bolt-socket/boltsocket run dev",
+    "typecheck": "pnpm --filter @bolt-socket/boltsocket run typecheck",
+    "clean": "pnpm --filter @bolt-socket/boltsocket exec rm -rf dist",
+    "publish": "pnpm --filter @bolt-socket/boltsocket publish",
+    "publish:dry": "pnpm run build && pnpm --filter @bolt-socket/boltsocket exec -- npm pack --dry-run"
   },
   "devDependencies": {
     "typescript": "^5.3.3"

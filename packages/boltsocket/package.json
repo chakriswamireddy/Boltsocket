@@ -1,0 +1,111 @@
+{
+  "name": "@bolt-socket/boltsocket",
+  "version": "1.0.0",
+  "description": "Type-safe WebSocket abstraction with Zod validation for real-time apps",
+  "license": "MIT",
+  "author": "BoltSocket Contributors",
+  "sideEffects": false,
+  "main": "./dist/core/index.js",
+  "module": "./dist/core/index.mjs",
+  "types": "./dist/core/index.d.ts",
+  "exports": {
+    "./core": {
+      "import": {
+        "types": "./dist/core/index.d.mts",
+        "default": "./dist/core/index.mjs"
+      },
+      "require": {
+        "types": "./dist/core/index.d.ts",
+        "default": "./dist/core/index.js"
+      }
+    },
+    "./server": {
+      "import": {
+        "types": "./dist/server/index.d.mts",
+        "default": "./dist/server/index.mjs"
+      },
+      "require": {
+        "types": "./dist/server/index.d.ts",
+        "default": "./dist/server/index.js"
+      }
+    },
+    "./react": {
+      "import": {
+        "types": "./dist/react/index.d.mts",
+        "default": "./dist/react/index.mjs"
+      },
+      "require": {
+        "types": "./dist/react/index.d.ts",
+        "default": "./dist/react/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chakriswamireddy/Boltsocket.git",
+    "directory": "packages/boltsocket"
+  },
+  "homepage": "https://github.com/chakriswamireddy/Boltsocket#readme",
+  "bugs": {
+    "url": "https://github.com/chakriswamireddy/Boltsocket/issues"
+  },
+  "keywords": [
+    "websocket",
+    "socket.io",
+    "events",
+    "typescript",
+    "type-safe",
+    "zod",
+    "validation",
+    "real-time",
+    "event-registry",
+    "bolt-socket",
+    "boltsocket",
+    "react",
+    "hooks"
+  ],
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "socket.io": ">=4.6.0",
+    "socket.io-client": ">=4.6.0",
+    "zod": ">=3.22.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "socket.io": {
+      "optional": true
+    },
+    "socket.io-client": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "react": "^18.2.0",
+    "socket.io": "^4.6.0",
+    "socket.io-client": "^4.6.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "zod": "^3.22.0"
+  }
+}
