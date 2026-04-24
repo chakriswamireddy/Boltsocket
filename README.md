@@ -2,6 +2,183 @@
 
 Full-stack, type-safe WebSocket abstraction for real-time applications built on Socket.IO and Zod.
 
+Here’s a clean, structured README you can drop into your repo:
+
+---
+
+# ⚡ BoltSocket
+
+Type-safe, schema-driven real-time communication layer built on top of WebSockets.
+Define your events once, and get validation, type safety, and developer tooling everywhere.
+
+---
+
+## 🚀 Why BoltSocket
+
+Real-time systems often fail in subtle ways:
+
+* Event names are stringly typed
+* Payloads are `any`
+* Invalid data silently propagates
+* Reconnect logic becomes fragile
+
+BoltSocket enforces correctness at **compile time + runtime**, eliminating an entire class of bugs.
+
+---
+
+## 🧠 Core Idea
+
+Define your event schema once using Zod, and BoltSocket ensures:
+
+* Strong TypeScript inference
+* Runtime validation
+* Safer emits and listeners
+
+```ts
+import { z } from "zod";
+import { createEventRegistry } from "boltsocket";
+
+const events = createEventRegistry({
+  "chat:message": z.object({
+    message: z.string().min(1).max(500),
+    userId: z.string(),
+    roomId: z.string(),
+  }),
+});
+```
+
+---
+
+## 🛡️ Server-side Validation
+
+Validate incoming data before broadcasting:
+
+```ts
+const result = events.validate("chat:message", raw);
+
+if (result.success) {
+  boltServer.emit("chat:message", result.data);
+}
+```
+
+* `result.data` is fully typed
+* Invalid payloads are rejected automatically
+
+---
+
+## ❌ Compile-time Safety
+
+Typos are caught immediately:
+
+```ts
+boltServer.emit("cht:message", data);
+// ❌ TypeScript error — invalid event name
+```
+
+No more silent runtime failures.
+
+---
+
+## 🔥 Feature Comparison
+
+| Feature            | Native Socket.IO        | BoltSocket                        |
+| ------------------ | ----------------------- | --------------------------------- |
+| Payload types      | `any`                   | Inferred from Zod schema          |
+| Invalid data       | Silently passes         | Rejected + error logged           |
+| Wrong event name   | Runtime bug             | Compile-time error                |
+| Room emit          | `io.to(room).emit(...)` | `emitToRoom(...)` with validation |
+| React hooks        | Manual setup            | Built-in hooks                    |
+| Reconnect handling | Manual                  | Sync + replay buffer              |
+| Auth middleware    | Manual                  | Typed auth context                |
+| Debug tooling      | console.log             | Built-in debug hooks              |
+
+---
+
+## 🏠 Room-based Emitting
+
+```ts
+boltServer.emitToRoom(roomId, "chat:message", data);
+```
+
+* Validates payload before sending
+* Ensures event correctness
+
+---
+
+## ⚛️ React Hooks (Built-in)
+
+No need to manage lifecycle manually.
+
+```ts
+useSocketEvent("chat:message", (data) => {
+  console.log(data.message);
+});
+
+const status = useConnectionStatus();
+```
+
+Available hooks:
+
+* `useSocketEvent`
+* `useSocket`
+* `useConnectionStatus`
+* `useDebugLogs`
+* `useEventTraces`
+* `useDevMode`
+
+---
+
+## 🔄 Reconnect Handling
+
+Handles unstable connections gracefully:
+
+* Automatic reconnection
+* `syncOnReconnect`
+* Server-side event replay buffer
+
+Clients don’t miss events after reconnect.
+
+---
+
+## 🔐 Authentication
+
+Attach typed auth context directly to the socket:
+
+```ts
+createBoltServer({
+  auth: async (token) => {
+    return { userId: "123" };
+  },
+});
+```
+
+* Fully typed across your app
+* No manual middleware wiring
+
+---
+
+## 🧪 Debugging & Dev Tools
+
+Built-in observability:
+
+* `useDebugLogs` → inspect events
+* `useEventTraces` → trace lifecycle
+* `useDevMode` → enhanced debugging
+
+---
+
+## 🧩 What You Get
+
+* End-to-end type safety
+* Runtime validation via Zod
+* Cleaner developer experience
+* Safer real-time systems
+* Reduced debugging overhead
+
+---
+
+
+
 ## Packages
 
 | Package | Version | Description |
