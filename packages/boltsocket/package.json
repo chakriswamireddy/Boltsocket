@@ -1,6 +1,6 @@
 {
   "name": "@bolt-socket/boltsocket",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Type-safe WebSocket abstraction with Zod validation for real-time apps",
   "license": "MIT",
   "author": "BoltSocket Contributors",
@@ -82,11 +82,13 @@
     "react",
     "hooks"
   ],
+  "dependencies": {
+    "zod": "^3.22.0"
+  },
   "peerDependencies": {
     "react": ">=18.0.0",
     "socket.io": ">=4.6.0",
-    "socket.io-client": ">=4.6.0",
-    "zod": ">=3.22.0"
+    "socket.io-client": ">=4.6.0"
   },
   "peerDependenciesMeta": {
     "react": {

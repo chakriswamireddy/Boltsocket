@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.1] - 2026-04-24
+
+### Changed
+
+- **Breaking improvement:** Moved `zod` from peer dependency to regular dependency
+- Now `zod` installs automatically - users don't need to install it separately
+- Simplified installation: just `npm install @bolt-socket/boltsocket`
+- `socket.io`, `socket.io-client`, and `react` remain optional peer dependencies
+
 ## [1.0.0] - 2026-04-24
 
 ### Added

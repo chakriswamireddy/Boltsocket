@@ -4,8 +4,19 @@ Type-safe WebSocket abstraction with Zod validation for real-time apps.
 
 ## Installation
 
+**Basic installation** (includes core functionality + Zod):
 ```bash
-npm install boltsocket zod socket.io socket.io-client react
+npm install @bolt-socket/boltsocket
+```
+
+**For server features**, also install:
+```bash
+npm install socket.io
+```
+
+**For React features**, also install:
+```bash
+npm install socket.io-client react
 ```
 
 ## Subpath Exports
@@ -66,13 +77,15 @@ function Chat() {
 }
 ```
 
-## Peer Dependencies
+## Dependencies
 
-- Core: `zod`
-- Server: `zod`, `socket.io` (optional)
-- React: `zod`, `socket.io-client`, `react` (optional)
+- **Included automatically:** `zod` (always installed)
+- **Optional (install if needed):**
+  - `socket.io` - for server features
+  - `socket.io-client` - for client/React features
+  - `react` - for React hooks
 
-All peer dependencies except `zod` are optional, so you only need to install what you use.
+Install only what you need for your use case!
 
 ## License
 
